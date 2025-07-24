@@ -55,12 +55,12 @@ jobs:
       - name: Run Trivy Scan
         run: |
           trivy fs --format table -o fs-report.json .
-        #trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --format json -o image-report.json . || exit 1
+          trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --format json -o image-report.json . || exit 1
 
       - name: Install and Run GitLeaks
         run: |
           sudo apt-get install -y gitleaks
-        # gitleaks detect --source . --report-path=gitleaks-report.json --format json --exit-code 1 || exit 1
+          gitleaks detect --source . --report-path=gitleaks-report.json --format json --exit-code 1 || exit 1
 
   sonarqube:
     needs: [lint, security_checks]
