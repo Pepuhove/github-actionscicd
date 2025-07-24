@@ -23,6 +23,7 @@ jobs:
           npm test
  
   lint:
+    needs: build
     name: Static Code Analysis
     runs-on: ubuntu-latest
     steps:
