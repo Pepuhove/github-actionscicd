@@ -82,7 +82,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: user/app:latest
+          tags: pepuhove/app-1:latest
 
   security_checks:
     needs: docker
