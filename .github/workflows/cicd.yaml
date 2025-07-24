@@ -21,7 +21,26 @@ jobs:
           npm install
           npm run build --if-present
           npm test
-
+ 
+  lint:
+    name: Static Code Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run ESLint
+        run: npm run lint
+  
   security_checks:
     needs: build
     runs-on: ubuntu-latest
@@ -39,13 +58,26 @@ jobs:
           sudo apt-get install -y trivy
 
       - name: Trivy FS scan
-        run: trivy fs --format table -o fs-report.json .
-
-      - name: GitLeaks installation
-        run: sudo apt-get install -y gitleaks
-
-      - name: GitLeaks Code Scan
-        run: gitleaks detect --source . --report-path=gitleaks-report.json --format json
+        run: |
+          trivy fs --format table -o fs-report.json .
+          trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --format json -o image-report.json .
+      - name: Check exit code for Trivy
+        run: |
+          if [ $? -ne 0 ]; then
+            echo "Trivy found issues, failing the job."
+            exit 1
+          fi
+      - name: GitLeaks installation and scan
+        run: |
+          sudo apt-get install -y gitleaks
+          gitleaks detect --source . --report-path=gitleaks-report.json --format json
+          gitleaks detect --exit-code=1 --sorce .
+      - name: Check exit code
+        run: |
+          if [ $? -ne 0 ]; then
+            echo "GitLeaks found issues, failing the job."
+            exit 1
+          fi
 
   sonarqube:
     needs: build
