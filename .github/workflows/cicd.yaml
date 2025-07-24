@@ -56,6 +56,13 @@ jobs:
         run: |
           trivy fs --format table -o fs-report.json .
           trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --format json -o image-report.json . || exit 1
+      - name: Upload Trivy Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy-reports
+          path: |
+           fs-report.json
+           image-report.json
 
       - name: Install and Run GitLeaks
         run: |
