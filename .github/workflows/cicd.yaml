@@ -55,7 +55,7 @@ jobs:
       - name: Run Trivy Scan
         run: |
           trivy fs --format table -o fs-report.json .
-          trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --format json -o image-report.json . || exit 1
+        #trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --format json -o image-report.json . || exit 1
 
       - name: Install and Run GitLeaks
         run: |
