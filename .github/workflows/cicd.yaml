@@ -21,35 +21,29 @@ jobs:
           npm install
           npm run build --if-present
           npm test
- 
+
   lint:
     needs: build
     name: Static Code Analysis
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run ESLint
-        run: npm run lint
-  
+
+      - run: npm ci
+      - run: npm run lint
+
   security_checks:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Trivy installation
+      - name: Install Trivy
         run: |
           sudo apt-get update
           sudo apt-get install -y wget apt-transport-https gnupg lsb-release
@@ -58,35 +52,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y trivy
 
-      - name: Trivy FS scan
+      - name: Run Trivy Scan
         run: |
           trivy fs --format table -o fs-report.json .
-          trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --format json -o image-report.json .
-      - name: Check exit code for Trivy
-        run: |
-          if [ $? -ne 0 ]; then
-            echo "Trivy found issues, failing the job."
-            exit 1
-          fi
-      - name: GitLeaks installation and scan
+          trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --format json -o image-report.json . || exit 1
+
+      - name: Install and Run GitLeaks
         run: |
           sudo apt-get install -y gitleaks
-          gitleaks detect --source . --report-path=gitleaks-report.json --format json
-          gitleaks detect --exit-code=1 --sorce .
-      - name: Check exit code
-        run: |
-          if [ $? -ne 0 ]; then
-            echo "GitLeaks found issues, failing the job."
-            exit 1
-          fi
+          gitleaks detect --source . --report-path=gitleaks-report.json --format json --exit-code 1 || exit 1
 
   sonarqube:
-    needs: build
+    needs: [lint, security_checks]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          # Disabling shallow clones is recommended for improving the relevancy of reporting
           fetch-depth: 0
 
       - name: SonarQube Scan
@@ -94,6 +75,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
       - name: SonarQube Quality Gate check
         id: sonarqube-quality-gate-check
         uses: sonarsource/sonarqube-quality-gate-action@master
@@ -102,5 +84,3 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          #
-          #
